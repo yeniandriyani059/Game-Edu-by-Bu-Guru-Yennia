@@ -1,0 +1,10 @@
+{
+  "name": "Gerak Cerdas Edu by Bu Guru Yennia",
+  "description": "Platform game edukasi gerak kamera multi-mata pelajaran untuk anak SD. Interaktif Benar atau Salah dikendalikan dengan gerakan tubuh lewat webcam.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
