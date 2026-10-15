@@ -74,6 +74,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
   const isLockedRef = useRef<boolean>(false);
   const dwellProgressRef = useRef<number>(0);
   const animFrameIdRef = useRef<number | null>(null);
+  const lastProcessTimeRef = useRef<number>(0);
 
   const onLockAnswerRef = useRef(onLockAnswer);
   onLockAnswerRef.current = onLockAnswer;
@@ -91,7 +92,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
   const steadyCenterStartRef = useRef<number | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize camera
+  // Initialize camera (Ringankan Beban: Resolusi 640x480, frameRate 15-30 fps untuk Smart TV)
   const startCamera = useCallback(async () => {
     try {
       setCameraError(null);
@@ -100,14 +101,28 @@ export const CameraView: React.FC<CameraViewProps> = ({
         oldStream.getTracks().forEach(track => track.stop());
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: facingMode,
+            width: { ideal: 640, max: 640 },
+            height: { ideal: 480, max: 480 },
+            frameRate: { ideal: 24, min: 15, max: 30 },
+          },
+          audio: false,
+        });
+      } catch (errConstraint) {
+        console.warn('Fallback basic 640x480 camera constraints for Smart TV:', errConstraint);
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: facingMode,
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+          },
+          audio: false,
+        });
+      }
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -226,78 +241,98 @@ export const CameraView: React.FC<CameraViewProps> = ({
 
     const loop = (now: number) => {
       if (videoRef.current && streamActive && (isGameActive || isCalibrating)) {
-        const res = poseTracker.processSinglePlayerFrame(
-          videoRef.current,
-          invertMirror,
-          leftBoundary,
-          rightBoundary
-        );
+        // Optimasi Anti-Delay Layar Sentuh IFP / Smart TV:
+        // Hentikan AI kamera menganalisis setiap frame!
+        // Throttle: batasi prediksi pose HANYA berjalan setiap 150 milidetik saja
+        // agar CPU IFP bisa bernapas dan merespons seketika terhadap sentuhan jari layar.
+        if (now - lastProcessTimeRef.current >= 150) {
+          lastProcessTimeRef.current = now;
+          const res = poseTracker.processSinglePlayerFrame(
+            videoRef.current,
+            invertMirror,
+            leftBoundary,
+            rightBoundary
+          );
 
-        setPoseResult(res);
-        setEngineType(res.engine);
+          setPoseResult(res);
+          setEngineType(res.engine);
 
-        // A. FASE KALIBRASI: MENUNGGU BERDIRI DI TENGAH
-        if (isCalibrating && calibPhase === 'stand_center' && !isCountingDown) {
-          if (res.isDetected && res.zone === 'CENTER') {
-            if (steadyCenterStartRef.current === null) {
-              steadyCenterStartRef.current = now;
-            } else if (now - steadyCenterStartRef.current >= 800) {
-              triggerCountdownRef.current();
+          // A. FASE KALIBRASI: MENUNGGU BERDIRI DI TENGAH
+          if (isCalibrating && calibPhase === 'stand_center' && !isCountingDown) {
+            // Hanya mulai jika tubuh manusia sungguhan terdeteksi di tengah (keyakinan >= 0.85)
+            if (res.isDetected && res.zone === 'CENTER') {
+              if (steadyCenterStartRef.current === null) {
+                steadyCenterStartRef.current = now;
+              } else if (now - steadyCenterStartRef.current >= 800) {
+                triggerCountdownRef.current();
+              }
+            } else {
+              steadyCenterStartRef.current = null;
             }
-          } else {
-            steadyCenterStartRef.current = null;
-          }
-          dwellProgressRef.current = 0;
-          setDwellProgress(0);
-          animFrameIdRef.current = requestAnimationFrame(loop);
-          return;
-        }
-
-        // B. FASE KALIBRASI: HITUNGAN MUNDUR (SENSOR DIKUNCI)
-        if (isCalibrating && isCountingDown) {
-          dwellProgressRef.current = 0;
-          setDwellProgress(0);
-          animFrameIdRef.current = requestAnimationFrame(loop);
-          return;
-        }
-
-        // C. FASE GAMEPLAY: EVALUASI LOMPATAN KIRI (BENAR) ATAU KANAN (SALAH)
-        if (isGameActive && !isCalibrating) {
-          if (isLockedRef.current) {
+            dwellProgressRef.current = 0;
+            setDwellProgress(0);
             animFrameIdRef.current = requestAnimationFrame(loop);
             return;
           }
 
-          const currentZone = res.zone;
-          const prevZone = activeZoneRef.current;
-
-          if (currentZone !== prevZone) {
-            activeZoneRef.current = currentZone;
-            dwellStartTimeRef.current = currentZone !== 'CENTER' ? now : null;
+          // B. FASE KALIBRASI: HITUNGAN MUNDUR (SENSOR DIKUNCI)
+          if (isCalibrating && isCountingDown) {
             dwellProgressRef.current = 0;
             setDwellProgress(0);
-          } else if (currentZone !== 'CENTER' && dwellStartTimeRef.current !== null) {
-            const elapsed = (now - dwellStartTimeRef.current) / 1000;
-            const ratio = Math.min(elapsed / dwellTargetSec, 1.0);
+            animFrameIdRef.current = requestAnimationFrame(loop);
+            return;
+          }
 
-            // Update progress state hanya jika ada perubahan signifikan untuk efisiensi
-            if (Math.abs(ratio - dwellProgressRef.current) >= 0.03 || ratio === 1.0) {
-              dwellProgressRef.current = ratio;
-              setDwellProgress(ratio);
+          // C. FASE GAMEPLAY: EVALUASI LOMPATAN KIRI (BENAR) ATAU KANAN (SALAH)
+          if (isGameActive && !isCalibrating) {
+            if (isLockedRef.current) {
+              animFrameIdRef.current = requestAnimationFrame(loop);
+              return;
             }
 
-            // Kunci jawaban jika sudah ditahan selama 2 detik penuh
-            if (elapsed >= dwellTargetSec && !isLockedRef.current) {
-              isLockedRef.current = true;
-              dwellProgressRef.current = 1.0;
-              setDwellProgress(1.0);
-              soundManager.playLock();
-              onLockAnswerRef.current(currentZone as 'LEFT' | 'RIGHT');
-            }
-          } else {
-            if (dwellProgressRef.current !== 0) {
-              dwellProgressRef.current = 0;
-              setDwellProgress(0);
+            // PERLINDUNGAN TERHADAP BENDA MATI:
+            // Jika res.isDetected === false (benda mati/kursi/topi dengan confidence < 0.85),
+            // JANGAN pernah mengunci jawaban atau memulai dwell timer!
+            if (!res.isDetected) {
+              activeZoneRef.current = 'CENTER';
+              dwellStartTimeRef.current = null;
+              if (dwellProgressRef.current !== 0) {
+                dwellProgressRef.current = 0;
+                setDwellProgress(0);
+              }
+            } else {
+              const currentZone = res.zone;
+              const prevZone = activeZoneRef.current;
+
+              if (currentZone !== prevZone) {
+                activeZoneRef.current = currentZone;
+                dwellStartTimeRef.current = currentZone !== 'CENTER' ? now : null;
+                dwellProgressRef.current = 0;
+                setDwellProgress(0);
+              } else if (currentZone !== 'CENTER' && dwellStartTimeRef.current !== null) {
+                const elapsed = (now - dwellStartTimeRef.current) / 1000;
+                const ratio = Math.min(elapsed / dwellTargetSec, 1.0);
+
+                // Update progress state hanya jika ada perubahan signifikan untuk efisiensi
+                if (Math.abs(ratio - dwellProgressRef.current) >= 0.03 || ratio === 1.0) {
+                  dwellProgressRef.current = ratio;
+                  setDwellProgress(ratio);
+                }
+
+                // Kunci jawaban jika sudah ditahan selama 2 detik penuh
+                if (elapsed >= dwellTargetSec && !isLockedRef.current) {
+                  isLockedRef.current = true;
+                  dwellProgressRef.current = 1.0;
+                  setDwellProgress(1.0);
+                  soundManager.playLock();
+                  onLockAnswerRef.current(currentZone as 'LEFT' | 'RIGHT');
+                }
+              } else {
+                if (dwellProgressRef.current !== 0) {
+                  dwellProgressRef.current = 0;
+                  setDwellProgress(0);
+                }
+              }
             }
           }
         }
@@ -328,9 +363,9 @@ export const CameraView: React.FC<CameraViewProps> = ({
     setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
   };
 
-  const isLeftZoneActive = poseResult.zone === 'LEFT' && isGameActive && !isCalibrating && !isPaused;
-  const isRightZoneActive = poseResult.zone === 'RIGHT' && isGameActive && !isCalibrating && !isPaused;
-  const isCenterZoneActive = poseResult.zone === 'CENTER';
+  const isLeftZoneActive = poseResult.isDetected && poseResult.zone === 'LEFT' && isGameActive && !isCalibrating && !isPaused;
+  const isRightZoneActive = poseResult.isDetected && poseResult.zone === 'RIGHT' && isGameActive && !isCalibrating && !isPaused;
+  const isCenterZoneActive = !poseResult.isDetected || poseResult.zone === 'CENTER';
 
   return (
     <div className="relative w-full h-full overflow-hidden rounded-3xl bg-slate-950 shadow-2xl border-4 border-amber-400/60 select-none">
@@ -648,7 +683,11 @@ export const CameraView: React.FC<CameraViewProps> = ({
               <button
                 type="button"
                 onClick={triggerCountdown}
-                className="w-full py-3.5 bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 text-slate-950 font-black rounded-2xl text-sm uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  triggerCountdown();
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 text-slate-950 font-black rounded-2xl text-sm uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95 touch-manipulation"
               >
                 <Play className="w-5 h-5 fill-slate-950" />
                 <span>SIAP! MULAI SOAL (SPASI / ENTER)</span>
@@ -678,7 +717,11 @@ export const CameraView: React.FC<CameraViewProps> = ({
         <button
           type="button"
           onClick={() => setInvertMirror(prev => !prev)}
-          className={`px-3 py-1.5 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-1.5 shadow-lg ${
+          onTouchStart={(e) => {
+            e.preventDefault();
+            setInvertMirror(prev => !prev);
+          }}
+          className={`px-3 py-1.5 rounded-xl text-xs font-black border transition cursor-pointer flex items-center gap-1.5 shadow-lg touch-manipulation ${
             invertMirror
               ? 'bg-rose-500 text-white border-rose-400'
               : 'bg-slate-900/90 hover:bg-slate-800 text-amber-300 border-amber-400/50'
@@ -693,7 +736,11 @@ export const CameraView: React.FC<CameraViewProps> = ({
         <button
           type="button"
           onClick={toggleFacingMode}
-          className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer shadow"
+          onTouchStart={(e) => {
+            e.preventDefault();
+            toggleFacingMode();
+          }}
+          className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer shadow touch-manipulation"
           title="Ganti Kamera Depan/Belakang"
         >
           <Camera className="w-4 h-4" />
@@ -708,12 +755,20 @@ export const CameraView: React.FC<CameraViewProps> = ({
           </div>
           <div className="text-left">
             <span className="text-[10px] text-amber-300 font-extrabold uppercase block leading-tight">
-              Giliran Murid:
+              Giliran Estafet:
             </span>
             <span className="text-xs font-black text-white">
-              {studentName} (Soal {questionNumberInTurn}/{totalQuestionsInTurn})
+              {teamName || studentName || 'TIM'} (Soal {questionNumberInTurn}/{totalQuestionsInTurn})
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Badge Status Optimasi Smart TV / IFP (Pojok Kanan Bawah) */}
+      <div className="absolute bottom-3 right-3 z-20 pointer-events-none hidden sm:block">
+        <div className="px-2.5 py-1 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-700/80 text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1.5 shadow">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>IFP Mode • 640x480 • Throttle 150ms • Lite 0.85</span>
         </div>
       </div>
     </div>

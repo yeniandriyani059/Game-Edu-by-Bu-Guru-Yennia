@@ -163,7 +163,11 @@ export const TurnTransitionScreen: React.FC<TurnTransitionScreenProps> = ({
           <button
             type="button"
             onClick={handleStart}
-            className={`w-full sm:w-auto px-10 py-4 font-black rounded-3xl shadow-2xl text-xl sm:text-2xl flex items-center justify-center gap-3 transition transform active:scale-95 cursor-pointer border-4 border-white ${
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleStart();
+            }}
+            className={`w-full sm:w-auto px-10 py-4 font-black rounded-3xl shadow-2xl text-xl sm:text-2xl flex items-center justify-center gap-3 transition transform active:scale-95 cursor-pointer border-4 border-white touch-manipulation ${
               isTeamA
                 ? 'bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 text-slate-950 shadow-amber-400/50'
                 : 'bg-gradient-to-r from-sky-400 to-cyan-300 hover:from-sky-300 text-slate-950 shadow-sky-400/50'

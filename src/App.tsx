@@ -30,6 +30,7 @@ import {
 import {
   APP_TITLE,
   getDaftarMapelDinams,
+  prepare10UniqueQuestions,
   prepare20UniqueQuestions
 } from './data/questions';
 import { CameraView } from './components/CameraView';
@@ -109,7 +110,7 @@ export default function App() {
   const activeTeamId: TeamId = overallQuestionIndex % 2 === 0 ? 'TIM_A' : 'TIM_B';
   const activeTeam: TeamStats = activeTeamId === 'TIM_A' ? teamA : teamB;
   const otherTeam: TeamStats = activeTeamId === 'TIM_A' ? teamB : teamA;
-  const teamQuestionNumber = Math.floor(overallQuestionIndex / 2) + 1; // 1 s/d 10
+  const teamQuestionNumber = Math.floor(overallQuestionIndex / 2) + 1; // 1 s/d 5 (5 Soal per Tim)
 
   // Sync fullscreen state
   useEffect(() => {
@@ -201,7 +202,7 @@ export default function App() {
     setShowHomeConfirmModal(true);
   }, [gameStatus]);
 
-  // Memulai turnamen Estafet 2 Tim (20 Soal Unik)
+  // Memulai turnamen Estafet 2 Tim (10 Soal Unik: 5 Tim A, 5 Tim B)
   const startNewTournament = useCallback(() => {
     try {
       if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
@@ -211,9 +212,9 @@ export default function App() {
       // ignore
     }
 
-    // Ambil tepat 20 Soal Unik Bangun Datar yang telah diacak (shuffle)
-    const fresh20 = prepare20UniqueQuestions();
-    setQuestions(fresh20);
+    // Ambil tepat 10 Soal Unik Bangun Datar yang telah diacak (shuffle)
+    const fresh10 = prepare10UniqueQuestions();
+    setQuestions(fresh10);
     setOverallQuestionIndex(0);
     setRoundResults([]);
     setTeamA({ ...INITIAL_TEAM_A });
@@ -328,13 +329,13 @@ export default function App() {
     roundLockedRef.current = false;
     setIsPaused(false);
 
-    // Cek apakah masih ada soal tersisa dari total 20 soal
-    if (overallQuestionIndex + 1 < questions.length && overallQuestionIndex + 1 < 20) {
+    // Cek apakah masih ada soal tersisa dari total 10 soal (5 soal per tim)
+    if (overallQuestionIndex + 1 < questions.length && overallQuestionIndex + 1 < 10) {
       // Masuk ke giliran tim berikutnya (bergantian TIM A <-> TIM B)
       setOverallQuestionIndex(prev => prev + 1);
       setGameStatus('turn_transition');
     } else {
-      // Seluruh 20 soal telah habis selesai -> Layar Kejuaraan & Penentuan Pemenang
+      // Seluruh 10 soal telah habis selesai -> Langsung Layar Kejuaraan & Penentuan Pemenang
       setGameStatus('summary');
     }
   }, [overallQuestionIndex, questions.length]);
@@ -404,7 +405,7 @@ export default function App() {
   };
 
   const nextTeamId: TeamId = (overallQuestionIndex + 1) % 2 === 0 ? 'TIM_A' : 'TIM_B';
-  const isLastQuestionOverall = overallQuestionIndex + 1 >= 20 || overallQuestionIndex + 1 >= questions.length;
+  const isLastQuestionOverall = overallQuestionIndex + 1 >= 10 || overallQuestionIndex + 1 >= questions.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 text-slate-100 flex flex-col justify-between selection:bg-amber-400 selection:text-slate-950 font-['Nunito',sans-serif] smooth-transition">
@@ -414,7 +415,7 @@ export default function App() {
         teamA={teamA}
         teamB={teamB}
         overallQuestionNumber={overallQuestionIndex + 1}
-        totalQuestions={questions.length > 0 ? questions.length : 20}
+        totalQuestions={questions.length > 0 ? questions.length : 10}
         isGameActive={gameStatus === 'playing' || gameStatus === 'calibrating'}
         isPaused={isPaused}
         onTogglePause={handleTogglePause}
@@ -441,7 +442,7 @@ export default function App() {
               <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto font-medium">
                 Sistem kompetisi estafet cerdas antara <strong className="text-amber-300">TIM A</strong> dan{' '}
                 <strong className="text-sky-300">TIM B</strong>. Anak maju satu per satu ke depan kamera untuk menjawab{' '}
-                <strong className="text-white font-bold">20 soal unik tanpa pengulangan</strong>!
+                <strong className="text-white font-bold">10 soal unik tanpa pengulangan (5 soal untuk TIM A, 5 soal untuk TIM B)</strong>!
               </p>
             </div>
 
@@ -455,17 +456,17 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="text-base font-black text-amber-300 uppercase">TIM A</h3>
-                    <span className="text-[10px] text-amber-200/80 font-bold">10 Soal Bergantian</span>
+                    <span className="text-[10px] text-amber-200/80 font-bold">5 Soal Bergantian</span>
                   </div>
                 </div>
                 <div className="text-xs text-slate-300 space-y-1">
                   <div className="flex justify-between">
                     <span>Target Skor:</span>
-                    <strong className="text-amber-300 font-bold">Maks 100 Poin</strong>
+                    <strong className="text-amber-300 font-bold">Maks 50 Poin</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Giliran:</span>
-                    <strong className="text-white">Soal 1, 3, 5, 7, ...</strong>
+                    <strong className="text-white">Soal 1, 3, 5, 7, 9</strong>
                   </div>
                 </div>
               </div>
@@ -478,17 +479,17 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="text-base font-black text-sky-300 uppercase">TIM B</h3>
-                    <span className="text-[10px] text-sky-200/80 font-bold">10 Soal Bergantian</span>
+                    <span className="text-[10px] text-sky-200/80 font-bold">5 Soal Bergantian</span>
                   </div>
                 </div>
                 <div className="text-xs text-slate-300 space-y-1">
                   <div className="flex justify-between">
                     <span>Target Skor:</span>
-                    <strong className="text-sky-300 font-bold">Maks 100 Poin</strong>
+                    <strong className="text-sky-300 font-bold">Maks 50 Poin</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Giliran:</span>
-                    <strong className="text-white">Soal 2, 4, 6, 8, ...</strong>
+                    <strong className="text-white">Soal 2, 4, 6, 8, 10</strong>
                   </div>
                 </div>
               </div>
@@ -512,10 +513,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={startNewTournament}
-                className="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 hover:from-amber-300 text-slate-950 font-black rounded-3xl shadow-2xl shadow-amber-500/50 text-xl sm:text-2xl flex items-center justify-center gap-3 transition transform active:scale-95 cursor-pointer border-4 border-white animate-bounce hover:animate-none"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  startNewTournament();
+                }}
+                className="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 hover:from-amber-300 text-slate-950 font-black rounded-3xl shadow-2xl shadow-amber-500/50 text-xl sm:text-2xl flex items-center justify-center gap-3 transition transform active:scale-95 cursor-pointer border-4 border-white animate-bounce hover:animate-none touch-manipulation"
               >
                 <Play className="w-7 h-7 fill-slate-950" />
-                <span>MULAI ESTAFET 2 TIM (20 SOAL)</span>
+                <span>MULAI ESTAFET 2 TIM (10 SOAL)</span>
               </button>
               <span className="text-xs text-slate-400 font-bold">
                 Sistem akan memanggil perwakilan TIM A untuk soal pertama
@@ -532,9 +537,9 @@ export default function App() {
             previousTeamScore={overallQuestionIndex > 0 ? otherTeam.score : undefined}
             previousTeamCorrect={overallQuestionIndex > 0 ? otherTeam.correctCount : undefined}
             overallQuestionNumber={overallQuestionIndex + 1}
-            totalQuestions={questions.length > 0 ? questions.length : 20}
+            totalQuestions={questions.length > 0 ? questions.length : 10}
             teamQuestionNumber={teamQuestionNumber}
-            teamTotalQuestions={10}
+            teamTotalQuestions={5}
             teamA={teamA}
             teamB={teamB}
             onStartTurn={handleStartTurn}
@@ -553,11 +558,11 @@ export default function App() {
           <QuestionCard
             question={currentQ}
             questionNumber={overallQuestionIndex + 1}
-            totalQuestions={questions.length > 0 ? questions.length : 20}
+            totalQuestions={questions.length > 0 ? questions.length : 10}
             teamName={activeTeam.name}
             teamScore={activeTeam.score}
             questionNumberInTurn={teamQuestionNumber}
-            totalQuestionsInTurn={10}
+            totalQuestionsInTurn={5}
             elapsedSeconds={elapsedLive}
             autoSpeak={gameStatus === 'playing'}
             isCalibrating={gameStatus === 'calibrating'}
@@ -573,8 +578,14 @@ export default function App() {
               isCalibrating={gameStatus === 'calibrating'}
               onCalibrationComplete={handleCalibrationComplete}
               questionNumberInTurn={teamQuestionNumber}
-              totalQuestionsInTurn={10}
-              isPaused={isPaused}
+              totalQuestionsInTurn={5}
+              isPaused={
+                isPaused ||
+                gameStatus === 'round_feedback' ||
+                gameStatus === 'summary' ||
+                gameStatus === 'turn_transition' ||
+                gameStatus === 'welcome'
+              }
             />
 
             {/* Umpan Balik Jawaban Ronde */}
@@ -587,7 +598,7 @@ export default function App() {
                 pointsEarned={lastAnswerResult.points}
                 timeSpentSeconds={lastAnswerResult.timeSpent}
                 questionNumberInTurn={teamQuestionNumber}
-                totalQuestionsInTurn={10}
+                totalQuestionsInTurn={5}
                 nextTeamName={isLastQuestionOverall ? undefined : (nextTeamId === 'TIM_A' ? 'TIM A' : 'TIM B')}
                 isLastQuestionOfTurn={true}
                 isGameFinished={isLastQuestionOverall}
@@ -598,7 +609,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* 5. LAYAR HASIL AKHIR (SETELAH 20 SOAL SELESAI DENGAN TIE-BREAKER WAKTU) */}
+        {/* 5. LAYAR HASIL AKHIR (SETELAH 10 SOAL SELESAI DENGAN TIE-BREAKER WAKTU) */}
         {gameStatus === 'summary' && (
           <SummaryModal
             teamA={teamA}
@@ -638,7 +649,7 @@ export default function App() {
                 <span>{teamB.score} Poin • {teamB.totalTimeSeconds.toFixed(1)}s</span>
               </div>
               <div className="text-[11px] text-slate-400 pt-1">
-                Giliran Aktif Saat Ini: <strong className="text-white">{activeTeam.name}</strong> (Soal #{overallQuestionIndex + 1}/20)
+                Giliran Aktif Saat Ini: <strong className="text-white">{activeTeam.name}</strong> (Soal #{overallQuestionIndex + 1}/10)
               </div>
             </div>
 
@@ -646,7 +657,11 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleTogglePause}
-                className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 text-slate-950 font-black rounded-2xl text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  handleTogglePause();
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 text-slate-950 font-black rounded-2xl text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95 touch-manipulation"
               >
                 <Play className="w-5 h-5 fill-slate-950" />
                 <span>LANJUTKAN (RESUME)</span>
@@ -657,7 +672,11 @@ export default function App() {
                 onClick={() => {
                   setShowHomeConfirmModal(true);
                 }}
-                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold rounded-2xl text-xs uppercase tracking-wider border border-slate-700 transition cursor-pointer flex items-center justify-center gap-1.5"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  setShowHomeConfirmModal(true);
+                }}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold rounded-2xl text-xs uppercase tracking-wider border border-slate-700 transition cursor-pointer flex items-center justify-center gap-1.5 touch-manipulation"
               >
                 <Home className="w-4 h-4" />
                 <span>Kembali ke Menu Utama</span>
@@ -691,14 +710,24 @@ export default function App() {
                   setIsPaused(false);
                   setGameStatus('welcome');
                 }}
-                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-2xl text-xs uppercase tracking-wider shadow transition cursor-pointer"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  setShowHomeConfirmModal(false);
+                  setIsPaused(false);
+                  setGameStatus('welcome');
+                }}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-2xl text-xs uppercase tracking-wider shadow transition cursor-pointer touch-manipulation"
               >
                 Ya, Kembali ke Menu
               </button>
               <button
                 type="button"
                 onClick={() => setShowHomeConfirmModal(false)}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl text-xs uppercase tracking-wider border border-slate-700 transition cursor-pointer"
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  setShowHomeConfirmModal(false);
+                }}
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl text-xs uppercase tracking-wider border border-slate-700 transition cursor-pointer touch-manipulation"
               >
                 Lanjutkan Permainan
               </button>

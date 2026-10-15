@@ -46,18 +46,18 @@ export class BodyPoseTracker {
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
       );
 
-      // MODE 1 PEMAIN: numPoses: 1 (fokus penuh, ringan & akurat)
+      // MODE 1 PEMAIN (maxPoses: 1): Model Lite (Complexity: 0) teringan untuk prosesor Smart TV / IFP
       this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+            'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', // Versi Lite (Complexity: 0)
           delegate: 'GPU',
         },
         runningMode: 'VIDEO',
-        numPoses: 1, // 1 Pemain tunggal
-        minPoseDetectionConfidence: 0.35,
-        minPosePresenceConfidence: 0.35,
-        minTrackingConfidence: 0.35,
+        numPoses: 1, // KUNCI 1 PEMAIN SAJA (maxPoses: 1)
+        minPoseDetectionConfidence: 0.85, // Nilai 0.85 (Abaikan Benda Mati / Sandaran Kursi / Topi)
+        minPosePresenceConfidence: 0.85,
+        minTrackingConfidence: 0.85, // Nilai 0.85
       });
 
       this.isLoaded = true;
@@ -120,18 +120,25 @@ export class BodyPoseTracker {
 
             let rawX: number;
             let rawY: number;
-            let conf = 0.7;
+            let conf = 0;
 
-            if (nose && (nose.visibility === undefined || nose.visibility > 0.20)) {
+            const noseVis = nose?.visibility !== undefined ? nose.visibility : 0.90;
+            const leftShoulderVis = leftShoulder?.visibility !== undefined ? leftShoulder.visibility : 0.90;
+            const rightShoulderVis = rightShoulder?.visibility !== undefined ? rightShoulder.visibility : 0.90;
+
+            // Verifikasi keyakinan tinggi (min 0.85) agar hanya merespons tubuh manusia asli
+            // Abaikan benda mati (sandaran kursi, topi, dll.)
+            if (nose && noseVis >= 0.85) {
               rawX = nose.x;
               rawY = nose.y;
-              conf = nose.visibility ?? 0.85;
-            } else if (leftShoulder && rightShoulder) {
+              conf = noseVis;
+            } else if (leftShoulder && rightShoulder && (leftShoulderVis >= 0.85 || rightShoulderVis >= 0.85)) {
               rawX = (leftShoulder.x + rightShoulder.x) / 2;
               rawY = (leftShoulder.y + rightShoulder.y) / 2;
-              conf = 0.6;
+              conf = (leftShoulderVis + rightShoulderVis) / 2;
             } else {
-              return this.fallbackMotionDetection(video, invertMirror, leftBoundary, rightBoundary);
+              // Tingkat keyakinan di bawah 0.85 -> Abaikan objek benda mati!
+              return defaultResult;
             }
 
             // Hitung koordinat layar mirrored
@@ -200,8 +207,12 @@ export class BodyPoseTracker {
       }
     }
 
-    // Gunakan fallback deteksi gerakan cepat jika MediaPipe belum siap
-    return this.fallbackMotionDetection(video, invertMirror, leftBoundary, rightBoundary);
+    // Gunakan fallback deteksi gerakan hanya jika MediaPipe belum berhasil dimuat
+    if (!this.isLoaded) {
+      return this.fallbackMotionDetection(video, invertMirror, leftBoundary, rightBoundary);
+    }
+
+    return defaultResult;
   }
 
   /**

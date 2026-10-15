@@ -104,7 +104,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         <div className="flex items-center gap-1.5 ml-auto">
           <button
             onClick={handleSpeakToggle}
-            className={`px-3 py-1 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer ${
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleSpeakToggle();
+            }}
+            className={`px-3 py-1 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer touch-manipulation ${
               isSpeaking
                 ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/40 animate-pulse'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
@@ -117,7 +121,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
           <button
             onClick={handleMuteToggle}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition border border-slate-700 cursor-pointer"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleMuteToggle();
+            }}
+            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition border border-slate-700 cursor-pointer touch-manipulation"
             title={isMuted ? 'Nyalakan Suara Narator' : 'Matikan Suara Narator'}
           >
             {isMuted ? (

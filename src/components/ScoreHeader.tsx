@@ -51,7 +51,11 @@ export const ScoreHeader: React.FC<ScoreHeaderProps> = ({
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onGoHome}
-            className="p-2 sm:p-2.5 rounded-2xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-slate-200 border-2 border-slate-700 transition cursor-pointer flex items-center gap-1.5 shadow"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              onGoHome();
+            }}
+            className="p-2 sm:p-2.5 rounded-2xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-slate-200 border-2 border-slate-700 transition cursor-pointer flex items-center gap-1.5 shadow touch-manipulation"
             title="Kembali ke Menu Utama (Home)"
           >
             <Home className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -67,7 +71,7 @@ export const ScoreHeader: React.FC<ScoreHeaderProps> = ({
                 Game Edu by Bu Guru Yennia
               </h1>
               <p className="text-[10px] sm:text-xs text-slate-400 font-bold truncate">
-                Estafet 2 Tim • 20 Soal Unik Bangun Datar
+                Estafet 2 Tim • 10 Soal Unik Bangun Datar
               </p>
             </div>
           </div>
@@ -149,7 +153,11 @@ export const ScoreHeader: React.FC<ScoreHeaderProps> = ({
           {isGameActive && (
             <button
               onClick={onTogglePause}
-              className={`px-3 py-2 rounded-xl border transition cursor-pointer flex items-center gap-1.5 text-xs font-black shadow ${
+              onTouchStart={(e) => {
+                e.preventDefault();
+                onTogglePause();
+              }}
+              className={`px-3 py-2 rounded-xl border transition cursor-pointer flex items-center gap-1.5 text-xs font-black shadow touch-manipulation ${
                 isPaused
                   ? 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 border-emerald-400 animate-pulse'
                   : 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-300'
@@ -164,7 +172,11 @@ export const ScoreHeader: React.FC<ScoreHeaderProps> = ({
           {/* Tombol Mute */}
           <button
             onClick={onToggleMute}
-            className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              onToggleMute();
+            }}
+            className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer touch-manipulation"
             title={isMuted ? 'Nyalakan Suara' : 'Matikan Suara'}
           >
             {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
@@ -173,7 +185,11 @@ export const ScoreHeader: React.FC<ScoreHeaderProps> = ({
           {/* Tombol Fullscreen */}
           <button
             onClick={onToggleFullscreen}
-            className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              onToggleFullscreen();
+            }}
+            className="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer touch-manipulation"
             title="Layar Penuh"
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}

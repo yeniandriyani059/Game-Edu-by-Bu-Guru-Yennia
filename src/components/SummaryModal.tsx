@@ -98,7 +98,7 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
         </h2>
 
         <p className="text-xs sm:text-sm text-slate-300 font-medium">
-          Total 20 soal unik telah dijawab secara bergantian oleh perwakilan TIM A dan TIM B!
+          Total 10 soal unik telah dijawab secara bergantian oleh perwakilan TIM A dan TIM B (5 soal per tim)!
         </p>
       </div>
 
@@ -172,7 +172,7 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
             </div>
             <div>
               <h4 className="text-base font-black text-amber-300 uppercase">TIM A</h4>
-              <span className="text-[10px] text-slate-400 font-bold">10 Soal Terjawab</span>
+              <span className="text-[10px] text-slate-400 font-bold">5 Soal Terjawab</span>
             </div>
           </div>
 
@@ -183,7 +183,7 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-800">
               <span className="text-slate-400 font-bold">Jawaban Benar:</span>
-              <span className="font-extrabold text-emerald-400">{teamA.correctCount} / 10 Soal</span>
+              <span className="font-extrabold text-emerald-400">{teamA.correctCount} / 5 Soal</span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-800">
               <span className="text-slate-400 font-bold flex items-center gap-1">
@@ -194,7 +194,7 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
             </div>
             <div className="flex justify-between items-center pt-1 text-[11px]">
               <span className="text-slate-500">Rata-rata per soal:</span>
-              <span className="text-slate-300 font-mono font-bold">{(teamA.totalTimeSeconds / 10).toFixed(1)}s</span>
+              <span className="text-slate-300 font-mono font-bold">{(teamA.totalTimeSeconds / 5).toFixed(1)}s</span>
             </div>
           </div>
         </div>
@@ -218,7 +218,7 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
             </div>
             <div>
               <h4 className="text-base font-black text-sky-300 uppercase">TIM B</h4>
-              <span className="text-[10px] text-slate-400 font-bold">10 Soal Terjawab</span>
+              <span className="text-[10px] text-slate-400 font-bold">5 Soal Terjawab</span>
             </div>
           </div>
 
@@ -229,7 +229,7 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-800">
               <span className="text-slate-400 font-bold">Jawaban Benar:</span>
-              <span className="font-extrabold text-emerald-400">{teamB.correctCount} / 10 Soal</span>
+              <span className="font-extrabold text-emerald-400">{teamB.correctCount} / 5 Soal</span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-800">
               <span className="text-slate-400 font-bold flex items-center gap-1">
@@ -240,17 +240,17 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
             </div>
             <div className="flex justify-between items-center pt-1 text-[11px]">
               <span className="text-slate-500">Rata-rata per soal:</span>
-              <span className="text-slate-300 font-mono font-bold">{(teamB.totalTimeSeconds / 10).toFixed(1)}s</span>
+              <span className="text-slate-300 font-mono font-bold">{(teamB.totalTimeSeconds / 5).toFixed(1)}s</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* RIWAYAT 20 SOAL BERGILIRAN */}
+      {/* RIWAYAT 10 SOAL BERGILIRAN */}
       <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 text-left space-y-2 max-h-52 overflow-y-auto">
         <div className="flex items-center justify-between pb-1 border-b border-slate-800">
           <span className="text-xs font-black text-slate-300 uppercase">
-            Riwayat 20 Soal Estafet Bergantian ({results.length} Soal Selesai):
+            Riwayat 10 Soal Estafet Bergantian ({results.length} Soal Selesai):
           </span>
           <span className="text-[11px] text-slate-400 font-bold">Hasil & Waktu</span>
         </div>
@@ -277,7 +277,7 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
                       : 'bg-sky-500/20 text-sky-300 border border-sky-400/40'
                   }`}
                 >
-                  {r.teamName} (Soal {r.questionNumberForTeam}/10)
+                  {r.teamName} (Soal {r.questionNumberForTeam}/5)
                 </span>
                 <span className="text-slate-200 truncate">{r.question.questionText}</span>
               </div>
@@ -301,16 +301,24 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
         <button
           type="button"
           onClick={onRestart}
-          className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 text-slate-950 font-black rounded-2xl text-sm uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 transition transform active:scale-95 cursor-pointer"
+          onTouchStart={(e) => {
+            e.preventDefault();
+            onRestart();
+          }}
+          className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 text-slate-950 font-black rounded-2xl text-sm uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 transition transform active:scale-95 cursor-pointer touch-manipulation"
         >
           <RotateCcw className="w-4 h-4" />
-          <span>MAIN ESTAFET LAGI (20 SOAL BARU)</span>
+          <span>MAIN ESTAFET LAGI (10 SOAL BARU)</span>
         </button>
 
         <button
           type="button"
           onClick={onBackToMenu}
-          className="w-full sm:w-auto px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl text-sm uppercase tracking-wider border border-slate-700 flex items-center justify-center gap-2 transition cursor-pointer"
+          onTouchStart={(e) => {
+            e.preventDefault();
+            onBackToMenu();
+          }}
+          className="w-full sm:w-auto px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl text-sm uppercase tracking-wider border border-slate-700 flex items-center justify-center gap-2 transition cursor-pointer touch-manipulation"
         >
           <Home className="w-4 h-4" />
           <span>KEMBALI KE MENU UTAMA</span>

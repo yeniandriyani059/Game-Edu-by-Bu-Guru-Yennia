@@ -31,7 +31,7 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({
   pointsEarned,
   timeSpentSeconds = 0,
   questionNumberInTurn = 1,
-  totalQuestionsInTurn = 10,
+  totalQuestionsInTurn = 5,
   nextTeamName,
   nextStudentName,
   isLastQuestionOfTurn = false,
@@ -186,7 +186,11 @@ export const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({
           <button
             type="button"
             onClick={handleNextClick}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl cursor-pointer transition transform active:scale-95 bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 hover:from-amber-300"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleNextClick();
+            }}
+            className="w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl cursor-pointer transition transform active:scale-95 bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 hover:from-amber-300 touch-manipulation"
           >
             {isGameFinished ? (
               <>

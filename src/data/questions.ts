@@ -450,10 +450,17 @@ export function getQuestionsForMapel(mapelId: string = 'bangunDatar', limit: num
 }
 
 /**
- * Mengambil tepat 20 soal unik tanpa pengulangan untuk Estafet 2 Tim (10 Soal Tim A, 10 Soal Tim B).
+ * Mengambil tepat 10 soal unik tanpa pengulangan untuk Estafet 2 Tim (5 Soal Tim A, 5 Soal Tim B).
+ */
+export function prepare10UniqueQuestions(): Question[] {
+  return getQuestionsForMapel('bangunDatar', 10);
+}
+
+/**
+ * Mengambil soal unik tanpa pengulangan untuk Estafet 2 Tim
  */
 export function prepare20UniqueQuestions(): Question[] {
-  return getQuestionsForMapel('bangunDatar', 20);
+  return getQuestionsForMapel('bangunDatar', 10);
 }
 
 /**
